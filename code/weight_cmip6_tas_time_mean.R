@@ -41,30 +41,34 @@ extractModelnames = function(filenames, startstring, stopstring){
 # Projections are using SSP585 (for maximum signal).
 # -----------------------------------------------------------------------------------------------
 
+# data directories
 fn.ssp585 = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'ssp585_r1i1p1')
-mods.ssp585 = extractModelnames(fn.ssp585, startstring = 'tas_Amon_', stopstring = "_ssp585")
-
 fn.historical = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'historical_r1i1p1')
-mods.historical = extractModelnames(fn.historical, startstring = 'tas_Amon_', stopstring = "_historical")
 
-# Which models are the same in both lists?
+# model name lists
+mods.ssp585 = extractModelnames(fn.ssp585, startstring = 'tas_Amon_', stopstring = "_ssp585")
+mods.historical = extractModelnames(fn.historical, startstring = 'tas_Amon_',
+  stopstring = "_historical")
+
+# Find models common to historical and future projection
 common.mods = intersect(mods.ssp585, mods.historical)
 
 fn.ssp585.kept = fn.ssp585[match(common.mods, mods.ssp585)]
 fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
 
-
-# find where the model names in the second vector match the model names in the first.
-
 # useful
 # https://stackoverflow.com/questions/17215789/extract-a-substring-in-r-according-to-a-pattern
 # start with strsplit, pmatch, charmatch
 
-fnallvec = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'historical_r1i1p1')
+# ---------------------------------------------------------------------------------------
+# Load historical model data
+# ---------------------------------------------------------------------------------------
 
-
+# Historical years
 yrs = 1985:2014
 nyr = length(yrs)
+
+#variable matrix (turn this into a function?
 varmat = matrix(nrow = length(fn.historical.kept), ncol = nyr)
 
 for(i in 1:length(fn.historical.kept)){
@@ -78,18 +82,20 @@ for(i in 1:length(fn.historical.kept)){
   nc_close(nc)
   
   vtail = tail(v, nyr)
- 
   varmat[i, ] = vtail
 }
-
   
 matplot(t(varmat), type = 'l')
 
-# Amomalize to the mean
+# Amomalize model runs to the mean of each run
 varmat.means = apply(varmat, 1, mean)
 
 # varmat.anom is the variable timeseries matrix anomaly
 varmat.anom = sweep(varmat, 1, STATS = varmat.means)
+
+# --------------------------------------------------------------------------------------------
+# Load Observations
+# --------------------------------------------------------------------------------------------
 
 # Load up the HadCRUT4 data
 obsmat = read.table(file = 'https://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/time_series/HadCRUT.4.6.0.0.annual_ns_avg.txt')
@@ -97,14 +103,13 @@ obsmat = read.table(file = 'https://www.metoffice.gov.uk/hadobs/hadcrut4/data/cu
 obsyears = obsmat[,1]
 obsmed   = obsmat[,2]
 
-obs.ix = which(obsyears %in% 1985:2014)
+obs.ix = which(obsyears %in% yrs)
 
 obs = obsmed[obs.ix]
 obs.anom = obs - mean(obs)
 
-
+# Plot the timeseries and model historical runs.
 matplot(yrs, t(varmat.anom), type = 'l', lty = 'solid', col = 'grey')
-
 lines(yrs, obs.anom, col = 'red', lty = 'solid')
 
 # Matrix of tas errors (differences between the anomalies of the obs and models)
@@ -120,13 +125,48 @@ tas.rmse = sqrt(apply( (tas.err)^2, 1, mean))
 
 # Skill weighting
 
-D_q = 0.5 # guess for now
+D_q = 0.2 # guess for now
 
 w_q = exp(  - (tas.rmse/D_q)^2)
 
+get_w_q = function(rmse, D_q){
+  
+  out = exp(-(rmse/D_q)^2)
+  out
+}
+
+
+# Check how rmse and weighting interact
+dev.new(width = 5, height = 8)
+plot(tas.rmse, w_q, xlab = 'RMSE', ylab = 'Performance weight', pty = 'n',
+     ylim = c(0,1),
+     xlim = c(min(tas.rmse), (max(tas.rmse)*1.05))
+     )
+
+D_q.vec = seq(from = 0.1, to = 0.9, by = 0.1)
+
+for(i in 1:length(D_q.vec)){
+
+  w_q_i = get_w_q(rmse = tas.rmse, D_q = D_q.vec[i])
+  tas.rmse.sort = sort(tas.rmse, index.return = TRUE)
+  w_q_i.sort = w_q_i[tas.rmse.sort$ix]
+  
+  points(tas.rmse.sort$x, w_q_i.sort, type = 'o')
+
+  text(
+       tail(tas.rmse.sort$x,1),
+       tail(w_q_i.sort,1),
+       labels = D_q.vec[i],
+       pos = 4,
+       col = 'red'
+       )
+}
+legend('topright', legend = 'D_q', text.col = 'red', bty = 'n')
+
+
 
 # Similarity weighting
-# (Not including the models at the moment)
+# (Not including the observations at the moment)
 
 # measure pairwise distance between models
 d_ij = dist(varmat.anom, upper = TRUE, diag = TRUE)
@@ -137,6 +177,20 @@ D_u = 0.5
 
 # S is a similarity score
 S = exp( - (d_ij.matrix / D_u)^2)
+
+library(fields)
+
+dev.new(width = 8, height = 8)
+
+mat1 = apply(S, 2, rev)
+
+# I think this is the right way round.
+dev.new(width = 10, height = 10)
+par(mar = c(8,8,3,3))
+image(1:26, 1:26,t(mat1), axes = FALSE, xlab = '', ylab = '')
+axis(2, at = 26:1, labels = common.mods, las = 1)
+axis(1, at = 1:26, labels = common.mods, las = 2)
+
 
 # R_u is a model's repetition
 
@@ -149,8 +203,13 @@ for(i in 1:nrow(S)){
 
 R_u = 1 + R
 
+
 # w_u is the Similarity weighting
 w_u = 1/R_u
+plot(tas.rmse, w_u)
+
+# here's how the similarity score and rmse relate.
+plot(tas.rmse, w_u)
 
 w.raw = w_q * w_u
 
@@ -161,6 +220,8 @@ A = 1/Ainv
 
 # final weights
 w = w.raw*A
+
+plot(tas.rmse, w)
 
 
 
@@ -245,7 +306,7 @@ futuremat.changemat = sweep(futuremat, 1, STATS = futuremat[,1])
 future.diff = futuremat.changemat [,ncol(futuremat.changemat )]
 
 future.warming = sample(future.diff , n, replace = TRUE)
-future.warming.weighted = sample(future.diff, n, replace = TRUE, probs = w)
+future.warming.weighted = sample(future.diff, n, replace = TRUE, prob = w)
 
 
 dev.new()
