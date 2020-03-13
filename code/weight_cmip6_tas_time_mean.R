@@ -163,11 +163,14 @@ for(i in 1:length(D_q.vec)){
 legend('topright', legend = 'D_q', text.col = 'red', bty = 'n')
 
 
+# Similarity weighting (including observations)
+
+
 
 # Similarity weighting
 # (Not including the observations at the moment)
 
-# measure pairwise distance between models
+# measure pairwise distance between models and the obs
 d_ij = dist(varmat.anom, upper = TRUE, diag = TRUE)
 d_ij.matrix = as.matrix(d_ij)
 
@@ -192,7 +195,6 @@ axis(1, at = 1:26, labels = common.mods, las = 2)
 
 
 # R_u is a model's repetition
-
 R = rep(NA, nrow(S))
 
 for(i in 1:nrow(S)){
