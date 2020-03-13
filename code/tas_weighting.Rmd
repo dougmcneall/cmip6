@@ -1,10 +1,10 @@
 ---
-title: An R Markdown document converted from "mean_tas_weighting.ipynb"
+title: Weighting tas by historical behaviour
 output: html_document
 ---
 
 ```{r}
-# Weight CMIP6 model projections based on historical data.
+# Weight CMIP6 model projection s based on historical data.
 # Uses global mean tas, data processed by Andy Wiltshire
 # Uses the weighting scheme of Sanderson et al (2017)
 # https://www.geosci-model-dev.net/10/2379/2017/
