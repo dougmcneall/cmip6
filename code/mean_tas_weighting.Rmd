@@ -65,7 +65,7 @@ fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
 # start with strsplit, pmatch, charmatch
 ```
 
-```{r}
+```{r fig.height = 8, fig.width = 8}
 # ---------------------------------------------------------------------------------------
 # Load and process historical model data
 # ---------------------------------------------------------------------------------------
@@ -91,6 +91,7 @@ for(i in 1:length(fn.historical.kept)){
   varmat[i, ] = vtail
 }
 
+
 par(las = 1)
 matplot(yrs, t(varmat), 
         type = 'l', lty = 'solid', main = 'raw model tas', ylab = 'tas (K)')
@@ -102,7 +103,7 @@ varmat.means = apply(varmat, 1, mean)
 varmat.anom = sweep(varmat, 1, STATS = varmat.means)
 ```
 
-```{r}
+```{r fig.width = 7, fig.height = 7}
 # --------------------------------------------------------------------------------------------
 # Load Observations
 # --------------------------------------------------------------------------------------------
@@ -133,24 +134,13 @@ min.rmse
 # Distance from observations for each of the models.
 dotchart(tas.rmse, labels = common.mods, main = 'TAS RMSE by model')
 
-# Plot the timeseries and model historical runs.
-par(las = 1)
-matplot(yrs, t(varmat.anom), type = 'l', lty = 'solid', col = 'grey',
-       main = "Historical temperature anomalies",
-       ylab = 'tas anomaly (K) ')
-lines(yrs, obs.anom, col = 'red', lty = 'solid')
-# lines(yrs, varmat.anom[25,] ,col = 'blue', lty = 'solid') # pick out NOR
-legend('topleft', lty = 'solid', col = 'red', legend = 'observations')
-
-#dat$Col <- rbPal(10)[as.numeric(cut(dat$y,breaks = 10))]
-
-rbPal <- colorRampPalette(c('blue', 'lightgrey'))
+rbPal <- colorRampPalette(c('darkblue', 'lightgrey'))
 linecols = rbPal(10)[as.numeric(cut(tas.rmse,breaks = 8))]
 
 par(las = 1)
 matplot(yrs, t(varmat.anom), type = 'l', 
         lty = 'solid',
-       main = "Historical temperature anomalies",
+       main = "Model temperature anomalies, weighted by rmse",
        ylab = 'tas anomaly (K)', col = linecols
 )
 lines(yrs, obs.anom, col = 'red', lty = 'solid')
@@ -164,7 +154,7 @@ legend('topleft', lty = 'solid', col = 'red', legend = 'observations', bty = 'n'
 # -------------------------------------------------------------------
 ```
 
-```{r}
+```{r fig.width = 6, fig.height = 7}
 # -------------------------------------------------------------------
 # Skill weighting function
 # -------------------------------------------------------------------
@@ -180,8 +170,6 @@ w_q = get_w_q(rmse = tas.rmse, D_q = D_q)
 
 w_q
 
-#dev.new(width = 5, height = 8)
-options(repr.plot.width = 6, repr.plot.height = 8)
 plot(tas.rmse, w_q, xlab = 'RMSE', ylab = 'Performance weight', pty = 'n',
      ylim = c(0,1),
      xlim = c(min(tas.rmse), (max(tas.rmse)*1.05))
@@ -212,7 +200,7 @@ legend('topright', legend = 'D_q', text.col = 'red', bty = 'n')
 
 ```
 
-```{r}
+```{r  fig.width = 10, fig.height = 10}
 # -------------------------------------------------------------------
 # Similarity weighting
 # (Not including the observations at the moment)
@@ -225,9 +213,7 @@ d_ij.matrix = as.matrix(d_ij)
 d_ij.formatted = apply(d_ij.matrix, 2, rev)
 
 # I think this is the right way round.
-#dev.new(width = 10, height = 10)
-options(repr.plot.width = 10, repr.plot.height = 10)
-par(mar = c(8,8,3,3))
+par(mar = c(9,9,3,3))
 image.plot(1:nmods, 1:nmods,t(d_ij.formatted), axes = FALSE, xlab = '', ylab = '')
 axis(2, at = nmods:1, labels = common.mods, las = 1)
 axis(1, at = 1:nmods, labels = common.mods, las = 2)
@@ -254,7 +240,7 @@ w_u = 1/R_u
 w_u
 ```
 
-```{r}
+```{r  fig.width = 5, fig.height = 8}
 # -----------------------------------------------------------------------------------
 # Final combination of the weights
 # -----------------------------------------------------------------------------------
@@ -272,7 +258,7 @@ w = w.raw*A
 # Check how rmse and weighting interact
 
 #dev.new(width = 5, height = 8)
-options(repr.plot.width = 5, repr.plot.height = 8)
+#options(repr.plot.width = 5, repr.plot.height = 8)
 plot(tas.rmse, w_q, xlab = 'RMSE', ylab = 'weight', pty = 'n',
      ylim = c(0,1),
      xlim = c(min(tas.rmse), (max(tas.rmse)*1.05)),
@@ -316,11 +302,12 @@ hist(warming.weighted, xlim = c(0,1.5 ))
 # So, what is the mean warming over the unweighted
 # and weighted sample?
 
-mean(warming.weighted)
-mean(warming.unweighted)
+paste0('mean warming (unweighted) = ', mean(warming.unweighted))
+paste0('mean warming (weighted) = ', mean(warming.weighted))
+
 ```
 
-```{r}
+```{r fig.width = 7, fig.height = 7}
 # --------------------------------------------------------------------------------------------
 # Extract future projection data
 #
@@ -358,7 +345,7 @@ matplot(fyrs,t(futuremat), type = 'l', lty = 'solid', main = 'raw model projecti
 futuremat.changemat = sweep(futuremat, 1, STATS = futuremat[,1])
 future.diff = futuremat.changemat [,ncol(futuremat.changemat )]
 
-matplot(fyrs, t(futuremat.changemat), type = 'l', lty = 'solid', main = 'raw model projection data')
+matplot(fyrs, t(futuremat.changemat), type = 'l', lty = 'solid', main = 'anomalized model projection data')
 
 future.warming = sample(future.diff , n, replace = TRUE)
 future.warming.weighted = sample(future.diff, n, replace = TRUE, prob = w)
@@ -370,14 +357,14 @@ hist(future.warming, xlim = c(0,10))
 hist(future.warming.weighted, xlim  = c(0,10))
 
 
-mean(future.warming)
-mean(future.warming.weighted)
+paste0('mean future warming unweighted = ', mean(future.warming))
+paste0('mean future warming weighted = ', mean(future.warming.weighted))
 ```
 
 ```{r}
-# I don't think my resampling technique works.
-
-# try a very large number of samples for the mean 
+# A better bootsrapping technique is to create a large number of 
+# samples, each the same size as the models. This gives you an estimate
+# of the mean (and the sampling uncertainty of that mean).
 
 mfu  = rep(NA,n)
 mfw =  rep(NA,n)
@@ -398,12 +385,12 @@ for(i in 1:n){
 }
 
 # mean of all the means of the bootstap sample
-mean(mfu)
-mean(mfw)
+paste0( 'mean means unweighted = ', mean(mfu))
+paste0( 'mean means weighted = ', mean(mfw))
 
 # mean of all the standard deviations of the bootstrap samples
-mean(sdfu)
-mean(sdfw)
+paste0( 'mean sds unweighted = ', mean(sdfu))
+paste0( 'mean sds weighted = ', mean(sdfw))
 
 ```
 
