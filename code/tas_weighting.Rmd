@@ -4,10 +4,10 @@ output: html_document
 ---
 
 ## Weight CMIP6 model projections based on historical performance. 
-Uses global mean tas from a number of CMIP6 models, with data processed by Andy Wiltshire
+Uses global mean tas from a number of CMIP6 models, with data processed by Andy Wiltshire.  
 Uses the weighting scheme of [Sanderson et al. (2017)](https://www.geosci-model-dev.net/10/2379/2017/)  
-This is a demonstration and exploration, so weights are arbitrary.
-Contact dougmcneall@gmail.com
+This is a demonstration and exploration, so weights are arbitrary. 
+Contact dougmcneall@gmail.com  
 ```{r}
 
 # Load packages
@@ -18,9 +18,9 @@ library(fields)
 # i = initialization index
 # p = physics index
 #f = forcing index
-
-#Bespoke functions
-
+```
+### Helper functions
+```{r}
 extractModelnames = function(filenames, startstring, stopstring){
   # Function to extract model names from a vector of cmip filenames
   # that have similar startstring and stopstring
@@ -40,8 +40,6 @@ extractModelnames = function(filenames, startstring, stopstring){
 Projections are using SSP585 (for maximum signal). There are all sorts of issues ignored here (for example, putting the maesurements on a common grid), but that shouldn't matter for a simple demonstration of relative weighting.
 
 ```{r}
-
-
 # data directories
 fn.ssp585 = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'ssp585_r1i1p1')
 fn.historical = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'historical_r1i1p1')
@@ -65,7 +63,7 @@ fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
 ```
 
 ### Load and process historical model data
-Uses the last 30 years of the historical runs.
+Uses a time series of the last 30 years of the historical runs.
 
 ```{r fig.height = 8, fig.width = 8}
 
@@ -148,18 +146,12 @@ legend('topleft', lty = 'solid', col = 'red', legend = 'observations', bty = 'n'
 
 ```
 
-```{r}
-# -------------------------------------------------------------------
-# Weighting section from Sanderson et al. (2017)
-# -------------------------------------------------------------------
-```
+### Weighting section
 
 ```{r fig.width = 6, fig.height = 7}
-# -------------------------------------------------------------------
-# Skill weighting function
-# -------------------------------------------------------------------
 
 get_w_q = function(rmse, D_q){ 
+  # Skill weighting function
   out = exp(-(rmse/D_q)^2)
   out
 }
@@ -200,11 +192,12 @@ legend('topright', legend = 'D_q', text.col = 'red', bty = 'n')
 
 ```
 
+
+### Similarity weighting
+(Not including the observations at the moment)
+
+
 ```{r  fig.width = 10, fig.height = 10}
-# -------------------------------------------------------------------
-# Similarity weighting
-# (Not including the observations at the moment)
-# -------------------------------------------------------------------
 
 # measure pairwise distance between models
 d_ij = dist(varmat.anom, upper = TRUE, diag = TRUE)
@@ -240,10 +233,10 @@ w_u = 1/R_u
 w_u
 ```
 
+
+### Final combination of the performance and similarity weights
+
 ```{r  fig.width = 5, fig.height = 8}
-# -----------------------------------------------------------------------------------
-# Final combination of the weights
-# -----------------------------------------------------------------------------------
 
 w.raw = w_q * w_u
 
@@ -271,10 +264,8 @@ points(tas.rmse, w, col = 'blue', pch = 19)
 legend('topleft', pch = 19, legend = c('w_q','w_u','w.raw', 'w') , col = c('black', 'red','orange', 'blue'))
 
 ```
-
+Apply a simple weighting by sampling from the distribution of historical warming, weighted according to w
 ```{r}
-# Apply the weighting by sampling from the distribution of models, weighted
-# according to w
 
 # create index by which we sample the model matrix
 n = 10000
@@ -294,28 +285,19 @@ warming.unweighted = mat.change(ts.sample.unweighted)
 
 #dev.new()
 par(mfrow = c(2,1))
-hist(warming.unweighted, xlim = c(0,1.5) )
-hist(warming.weighted, xlim = c(0,1.5 ))
+hist(warming.unweighted, xlim = c(0,1.5), main = 'unweighted historical (resampled)' )
+hist(warming.weighted, xlim = c(0,1.5 ), main = 'weighted historical (resampled)')
 ```
-
+### Mean warming over the unweighted and weighted sample
 ```{r}
-# So, what is the mean warming over the unweighted
-# and weighted sample?
-
 paste0('mean warming (unweighted) = ', mean(warming.unweighted))
 paste0('mean warming (weighted) = ', mean(warming.weighted))
 
 ```
-
+## Extract future projection data
+Start with a single realisation from each model (r1i1p1), to keep everything the same.  
+Hadley models use f2 - they don't have f1
 ```{r fig.width = 7, fig.height = 7}
-# --------------------------------------------------------------------------------------------
-# Extract future projection data
-#
-#
-# --------------------------------------------------------------------------------------------
-
-# start with those models that are r1i1p1, to keep everything the same.
-# Hadley models use f2 - they don't have f1
 
 fyrs = 2015:2099
 fnyr = length(fyrs)
@@ -347,24 +329,27 @@ future.diff = futuremat.changemat [,ncol(futuremat.changemat )]
 
 matplot(fyrs, t(futuremat.changemat), type = 'l', lty = 'solid', main = 'anomalized model projection data')
 
+
+```
+
+### Weight the future projections of tas change
+
+```{r}
 future.warming = sample(future.diff , n, replace = TRUE)
 future.warming.weighted = sample(future.diff, n, replace = TRUE, prob = w)
 
 
 #dev.new()
 par(mfrow = c(2,1))
-hist(future.warming, xlim = c(0,10))
-hist(future.warming.weighted, xlim  = c(0,10))
+hist(future.warming, xlim = c(0,10), main = 'Unweighted future warming')
+hist(future.warming.weighted, xlim  = c(0,10), main = 'weighted future warming')
 
 
 paste0('mean future warming unweighted = ', mean(future.warming))
 paste0('mean future warming weighted = ', mean(future.warming.weighted))
 ```
-
+A better bootsrapping technique is to create a large number of  samples, each the same size as the models. This gives you an estimate of the mean (and the sampling uncertainty of that mean).
 ```{r}
-# A better bootsrapping technique is to create a large number of 
-# samples, each the same size as the models. This gives you an estimate
-# of the mean (and the sampling uncertainty of that mean).
 
 mfu  = rep(NA,n)
 mfw =  rep(NA,n)
