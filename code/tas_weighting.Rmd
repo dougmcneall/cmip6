@@ -1,15 +1,14 @@
 ---
-title: Weighting tas by historical behaviour
+title: Weighting projections of tas by historical behaviour
 output: html_document
 ---
 
+## Weight CMIP6 model projections based on historical performance. 
+Uses global mean tas from a number of CMIP6 models, with data processed by Andy Wiltshire
+Uses the weighting scheme of [Sanderson et al. (2017)](https://www.geosci-model-dev.net/10/2379/2017/)  
+This is a demonstration and exploration, so weights are arbitrary.
+Contact dougmcneall@gmail.com
 ```{r}
-# Weight CMIP6 model projection s based on historical data.
-# Uses global mean tas, data processed by Andy Wiltshire
-# Uses the weighting scheme of Sanderson et al (2017)
-# https://www.geosci-model-dev.net/10/2379/2017/
-
-# dougmcneall@gmail.com
 
 # Load packages
 library(ncdf4)
@@ -37,11 +36,11 @@ extractModelnames = function(filenames, startstring, stopstring){
 }
 ```
 
+### Use historical global tas compared with HadCRUT4.6 observations to weight the models.
+Projections are using SSP585 (for maximum signal). There are all sorts of issues ignored here (for example, putting the maesurements on a common grid), but that shouldn't matter for a simple demonstration of relative weighting.
+
 ```{r}
-# -----------------------------------------------------------------------------------------------
-# Use historical tas compared with hardcrut observations to weight the models.
-# Projections are using SSP585 (for maximum signal).
-# -----------------------------------------------------------------------------------------------
+
 
 # data directories
 fn.ssp585 = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'ssp585_r1i1p1')
@@ -65,10 +64,11 @@ fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
 # start with strsplit, pmatch, charmatch
 ```
 
+### Load and process historical model data
+Uses the last 30 years of the historical runs.
+
 ```{r fig.height = 8, fig.width = 8}
-# ---------------------------------------------------------------------------------------
-# Load and process historical model data
-# ---------------------------------------------------------------------------------------
+
 
 # Historical years
 yrs = 1985:2014
@@ -102,11 +102,11 @@ varmat.means = apply(varmat, 1, mean)
 # varmat.anom is the variable timeseries matrix anomaly
 varmat.anom = sweep(varmat, 1, STATS = varmat.means)
 ```
+### Load Observations
+Currently uses HadCRUT4.6
 
 ```{r fig.width = 7, fig.height = 7}
-# --------------------------------------------------------------------------------------------
-# Load Observations
-# --------------------------------------------------------------------------------------------
+
 
 # Load up the HadCRUT4 data
 obsmat = read.table(file = 'https://www.metoffice.gov.uk/hadobs/hadcrut4/data/current/time_series/HadCRUT.4.6.0.0.annual_ns_avg.txt')
