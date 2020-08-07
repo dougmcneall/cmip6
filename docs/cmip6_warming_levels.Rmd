@@ -213,15 +213,13 @@ matplot(full_years, t(full_trajectory_anomaly),
         ylab = 'Deg C')
 
 ```
+## Load historical and SSP CO2
 
 ```{r}
 # Looks like we can get the ssp concentration data from here
 # http://greenhousegases.science.unimelb.edu.au/#!/ghg?scenarioid=9&mode=downloads
 
 co2_hist <- read.csv('../data/conc/mole-fraction-of-carbon-dioxide-in-air_input4MIPs_GHGConcentrations_CMIP_UoM-CMIP-1-2-0_gr1-GMNHSH_0000-2014.csv')
-
-plot(co2_hist$year, co2_hist$data_mean_global, type = 'l')
-
 
 co2_ssp119 <- read.csv('../data/conc/mole-fraction-of-carbon-dioxide-in-air_input4MIPs_GHGConcentrations_ScenarioMIP_UoM-IMAGE-ssp119-1-2-1_gr1-GMNHSH_2015-2500.csv')
 
@@ -242,7 +240,7 @@ co2_ssp585 <- read.csv('../data/conc/mole-fraction-of-carbon-dioxide-in-air_inpu
 ```
 
 
-# sort the co2 data into the correct format.
+## sort the co2 data into the correct format.
 ```{r}
 process_co2_data <- function(hist_co2, ssp_co2, years){
 
@@ -291,9 +289,10 @@ co2_ssp585_const <- process_co2_data(hist_co2 = co2_hist,
                            years = full_years)
 ```
 
+## Check CO2 for the SSPs
 
 ```{r}
-#doesmn't look like we have anything for ssp534
+#doesn't look like we have anything for ssp534
 
 cbPal <- rev(c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00"))#, "#CC79A7"))
 
@@ -311,6 +310,8 @@ for(i in 1:length(co2_list)){
 }
 
 ```
+
+## Load historical tas
 
 ```{r}
 getTAShist <- function(fn.historical.kept, hyrs = 1850:2014){
@@ -339,6 +340,7 @@ getTAShist <- function(fn.historical.kept, hyrs = 1850:2014){
 
 ```
 
+## load tas for each SSP
 
 ```{r}
 getTASssp <- function(ssp, mods.historical, fyrs = 2015:2099){
@@ -373,39 +375,12 @@ getTASssp <- function(ssp, mods.historical, fyrs = 2015:2099){
   return(list(tas = futuremat, mods = common.mods, fn.ssp = fn.ssp, mods = mods.ssp))
 }
 
-# interestingly, the SSPs have different year lengths: make sure we're using the right section
-# (hacked for now)
 ```
 
 
+
+## Generate full trajectories of tas, splicing historical with ssp
 ```{r}
-test_ssp <- getTASssp(ssp = '119', mods.historical = mods.historical, fyrs = 2015:2099)
-
-matplot(t(test_ssp$tas), type = 'l')
-
-
-  mods.historical = extractModelnames(fn.historical, startstring = 'tas_Amon_',
-  stopstring = "_historical")
-
-# Find models common to historical and future projection
-  common.mods = intersect(test_ssp$mods, mods.historical)
-
-  nmods = length(common.mods)
-
-  #fn.ssp.kept = fn.ssp[match(common.mods, mods.ssp)]
-  fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
-
-test_hist <- getTAShist(fn.historical.kept = fn.historical.kept)
-
-matplot(t(test_hist), type = 'l')
-
-
-```
-
-
-```{r}
-
-# 
 for(i in 1:length(ssplist)){
   print(i)
   
@@ -442,31 +417,13 @@ for(i in 1:length(ssplist)){
   
   assign(paste0('models_tas_ssp',ssplist[i]), TASssp$mods)
   
-  
-  
 }
-
-
-
-
 ```
-
-
-```{r}
-for(i in 1:length(ssplist)){
-  
-  matplot(t(get(paste0('full_trajectory_tas_ssp',ssplist[i]),)), type = 'l')
-  
-}
-
-```
-
-
 
 
 ## Year of passing 1.5 and 2 degrees for SSP585 
 ```{r}
-# re-write as a function
+# re-write this as a function
 passyears_ssp585 <- as.data.frame(matrix(NA, nrow = length(common.mods), ncol = 5))
 colnames(passyears_ssp585) <- c('modname', "year_1.5","conc_1.5", "year_2", "conc_2")
 
@@ -519,14 +476,11 @@ generatePassyears <- function(mods, co2, tas, k = 20, bp = 1861:1880){
   passyears
   
 }
-
-#test <- generatePassyears(mods = common.mods, co2 = co2_ssp585_const, tas = full_trajectory)
-
 ```
 
+## Calculate the years the SSPs pass warming levels
 
-```{r}
-# need to swap out tas for the right one each time
+```{r, warning=FALSE}
 
 for(i in 1:length(co2_list)){
   
@@ -537,22 +491,9 @@ for(i in 1:length(co2_list)){
   
 }
 
-
-
 ```
 
-```{r}
-par(las = 1)
-matplot(full_years, t(full_trajectory_anomaly),
-        type = 'l', lty = 'solid', col = 'darkgrey',
-        bty = 'n',
-        main = 'SSP585',
-        ylab = 'Deg C')
-
-points(passyears_ssp585[,'year_1.5'],rep(1.5, length(common.mods)), pch = 20, col = 'skyblue2')
-points(passyears_ssp585[,'year_2'],rep(2, length(common.mods)), pch = 20, col = 'tomato2')
-
-```
+## Plot the years the SSPs pass warming levels
 ```{r}
 
 for(i in 1:length(ssplist)){
