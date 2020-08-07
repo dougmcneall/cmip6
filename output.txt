@@ -1,0 +1,15 @@
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_E3SM-1-1_historical_r1i1p1f1_gr_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_HadGEM3-GC31-MM_historical_r1i1p1f3_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_NorCPM1_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_CESM2-WACCM-FV2_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_NorESM2-MM_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_INM-CM4-8_historical_r1i1p1f1_gr1_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_MIROC-ES2L_historical_r1i1p1f2_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_GISS-E2-1-G_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_CESM2-FV2_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_MRI-ESM2-0_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_NorESM2-LM_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_MPI-ESM1-2-HR_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_EC-Earth3-Veg_historical_r1i1p1f1_gr_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_CESM2-WACCM_historical_r1i1p1f1_gn_area_avg.nctest
+yearrange(1850, 2015)/data/users/hadaw/cmip6/areaavg/tas/tas_Amon_GISS-E2-1-H_historical_r1i1p1f2_gn_area_avg.nctest
