@@ -89,10 +89,6 @@ findThresRolling = function(time, y, conc, k = 20, thres = 2, bp = 1861:1880){
 ```
 
 
-
-### Use historical global tas compared with HadCRUT4.6 observations to weight the models.
-Projections are using SSP585 (for maximum signal). There are all sorts of issues ignored here (for example, putting the maesurements on a common grid), but that shouldn't matter for a simple demonstration of relative weighting.
-
 ```{r}
 # data directories
 fn.ssp585 = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'ssp585_r1i1p1')
@@ -523,4 +519,116 @@ for(i in 1:length(ssplist)){
 
 
 ```
+
+
+
+```{r}
+
+
+rcp85_passyears_2 <- read.table('~/at2degreesgit/RCP85_combined_2deg.txt')
+
+rcp60_passyears_2 <- read.table('~/at2degreesgit/RCP60_combined_2deg.txt')
+
+rcp45_passyears_2 <- read.table('~/at2degreesgit/RCP45_combined_2deg.txt')
+
+rcp26_passyears_2 <- read.table('~/at2degreesgit/RCP26_combined_2deg.txt')
+
+```
+
+```{r, fig.width = 6, fig.height = 7}
+
+#plot co2 concentrations
+par(mar = c(5,6,3,3), las = 1)
+plot(passyears_ssp119$conc_2, rep(1, length(passyears_ssp119$conc_2)),  xlim = c(370,700), ylim = c(0,8),
+     type = 'n', axes = FALSE, ylab = '', xlab = 'CO2 concentration at 2 degrees')
+abline(h = 1:7, lty = 'dotted')
+
+ssplist_ordered <- c('ssp119','ssp126', 'ssp434', 'ssp245', 'ssp460', 'ssp370', 'ssp585' )
+axis(2, at = 1:7, labels = ssplist_ordered)
+axis(1)
+
+pch = 21
+cex = 1.2
+col = 'tomato4'
+bg = 'tomato'
+points(passyears_ssp119$conc_2, rep(1, length(passyears_ssp119$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp26_passyears_2$CO2_ppmv, rep(1.8, length(rcp26_passyears_2$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp126$conc_2, rep(2, length(passyears_ssp126$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(passyears_ssp434$conc_2, rep(3, length(passyears_ssp434$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp45_passyears_2$CO2_ppmv, rep(3.8, length(rcp45_passyears_2$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex,bg = 'skyblue2')
+points(passyears_ssp245$conc_2, rep(4, length(passyears_ssp245$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp60_passyears_2$CO2_ppmv, rep(4.8, length(rcp60_passyears_2$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp460$conc_2, rep(5, length(passyears_ssp460$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(passyears_ssp370$conc_2, rep(6, length(passyears_ssp370$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp85_passyears_2$CO2_ppmv, rep(6.8, length(rcp85_passyears_2$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp585$conc_2, rep(7, length(passyears_ssp585$conc_2)), col = col, bg = bg, pch = pch, cex = cex)
+
+mtext('CO2 concentration passing 2 degrees', side = 3, adj = 0, line = -1, cex = 1.3)
+legend('bottomright', legend = c('CMIP6','CMIP5'), col = c(col, 'skyblue2'), pch = 21, pt.bg = c(bg, 'skyblue3'), bty = 'n')
+
+
+```
+
+
+
+```{r}
+rcp85_passyears_1_5 <- read.table('~/at2degreesgit/RCP85_combined_1_5_deg.txt')
+
+rcp60_passyears_1_5 <- read.table('~/at2degreesgit/RCP60_combined_1_5_deg.txt')
+
+rcp45_passyears_1_5 <- read.table('~/at2degreesgit/RCP45_combined_1_5_deg.txt')
+
+rcp26_passyears_1_5 <- read.table('~/at2degreesgit/RCP26_combined_1_5_deg.txt')
+
+
+```
+
+```{r, fig.width = 6, fig.height = 7}
+
+#plot co2 concentrations
+par(mar = c(5,6,3,3), las = 1)
+plot(passyears_ssp119$conc_1.5, rep(1, length(passyears_ssp119$conc_1.5)),  xlim = c(370,700), ylim = c(0,8),
+     type = 'n', axes = FALSE, ylab = '', xlab = 'CO2 concentration at 1.5 degrees')
+abline(h = 1:7, lty = 'dotted')
+
+ssplist_ordered <- c('ssp119','ssp126', 'ssp434', 'ssp245', 'ssp460', 'ssp370', 'ssp585' )
+axis(2, at = 1:7, labels = ssplist_ordered)
+axis(1)
+
+pch = 21
+cex = 1.2
+col = 'tomato4'
+bg = 'tomato'
+points(passyears_ssp119$conc_1.5, rep(1, length(passyears_ssp119$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp26_passyears_1_5$CO2_ppmv, rep(1.8, length(rcp26_passyears_1_5$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp126$conc_1.5, rep(2, length(passyears_ssp126$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(passyears_ssp434$conc_1.5, rep(3, length(passyears_ssp434$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp45_passyears_1_5$CO2_ppmv, rep(3.8, length(rcp45_passyears_1_5$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex,bg = 'skyblue2')
+points(passyears_ssp245$conc_1.5, rep(4, length(passyears_ssp245$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp60_passyears_1_5$CO2_ppmv, rep(4.8, length(rcp60_passyears_1_5$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp460$conc_1.5, rep(5, length(passyears_ssp460$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(passyears_ssp370$conc_1.5, rep(6, length(passyears_ssp370$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+points(rcp85_passyears_1_5$CO2_ppmv, rep(6.8, length(rcp85_passyears_1_5$CO2_ppmv)), col = 'skyblue3', pch = 21, cex = cex, bg = 'skyblue2')
+points(passyears_ssp585$conc_1.5, rep(7, length(passyears_ssp585$conc_1.5)), col = col, bg = bg, pch = pch, cex = cex)
+
+mtext('CO2 concentration passing 1.5 degrees', side = 3, adj = 0, line = -1, cex = 1.3)
+legend('bottomright', legend = c('CMIP6','CMIP5'), col = c(col, 'skyblue2'), pch = 21, pt.bg = c(bg, 'skyblue3'), bty = 'n')
+
+
+```
+
+
+
 
