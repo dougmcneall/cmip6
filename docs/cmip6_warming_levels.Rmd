@@ -5,7 +5,7 @@ date: "8/4/2020"
 output: html_document
 ---
 
-Extract year of passing warming levels and co2 concetration at the time in the cmip6 archive.
+Extract year of passing warming levels and co2 concentration at the time in the cmip6 archive.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -489,6 +489,8 @@ for(i in 1:length(co2_list)){
 
 ```
 
+
+
 ## Plot the years the SSPs pass warming levels
 ```{r}
 
@@ -522,8 +524,28 @@ for(i in 1:length(ssplist)){
 
 
 
+Save the CMIP6 year of passing thresholds and accompanying CO2 concentration as RData and CSVs.
+
 ```{r}
 
+passyears_list <- as.list(ls(pattern = 'passyears_ssp'))
+
+
+for(i in passyears_list){
+  
+  passyears = get(i)
+  save(passyears, file = paste0(i,'.RData'))
+  
+  write.table(passyears, file = paste0(i,'.csv'))
+  
+}
+
+
+```
+
+## Load CMIP5 passyears
+
+```{r}
 
 rcp85_passyears_2 <- read.table('~/at2degreesgit/RCP85_combined_2deg.txt')
 
