@@ -1,0 +1,297 @@
+---
+title: "cmip6_warming_levels"
+author: "Doug McNeall"
+date: "8/4/2020"
+output: html_document
+---
+
+Extract year of passing warming levels and co2 concetration at the time in the cmip6 archive.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+# Load packages
+library(ncdf4)
+library(fields)
+
+# r = realization index
+# i = initialization index
+# p = physics index
+# f = forcing index
+```
+
+
+
+### Helper functions
+```{r}
+extractModelnames = function(filenames, startstring, stopstring){
+  # Function to extract model names from a vector of cmip filenames
+  # that have similar startstring and stopstring
+
+  fs = lapply(filenames,regexpr, pattern = startstring)
+  fe = lapply(filenames,regexpr, pattern = stopstring)
+  out = rep(NA, length(filenames))
+
+  for(i in 1:length(filenames)){
+    out[i] = substr(filenames[i], attr(fs[i][[1]], 'match.length')+1, fe[[i]][1]-1)
+  }
+  out
+}
+
+# rollmean to find the year of passing various thresholds, then index back in to the ssp co2 concentrations
+library(zoo)
+
+findThres = function(time, x, f = 1/5, thres = 2, y.ix = 1:30){
+  # smooth a timeseries and find the point where
+  # it crosses a threshold.
+  ysmooth = lowess(x = x, f = f)
+  ysmooth.start = mean(ysmooth$y[y.ix])
+  ysmooth.change = ysmooth$y - ysmooth.start
+  out = time[ min(which(ysmooth.change > thres))]
+  out
+}
+
+findThresRolling = function(time, y, conc, k = 20, thres = 2, bp = 1861:1880){
+  # smooth a timeseries with rollmean and find the point where
+  # it crosses a threshold.
+  # Baseline is calculated using only the years that are in the baseline period
+  # - if not all those years are there, the mean is calculated using a shorter
+  # baseline period.
+  
+  require(zoo)
+  
+  # find the index with the start of the baseline period
+  bp.ix = which(round(time) %in% bp)
+  bp.mean = mean(y[bp.ix], na.rm = TRUE)
+  
+  ysmooth = rollmean(y, k = k, na.pad = TRUE)
+  #NonNAindex = which(!is.na(ysmooth))
+  #firstNonNA = min(NonNAindex)
+  #ysmooth.change = ysmooth - ysmooth[firstNonNA]
+  ysmooth.change = ysmooth - bp.mean
+  y.change = y - bp.mean
+  #out = time[ min(which(ysmooth.change > thres))]
+  thresyear = tryCatch(time[ min(which(ysmooth.change > thres))],
+                     error=function(err) NA)
+  
+  thresconc = tryCatch(conc[ min(which(ysmooth.change > thres))],
+                       error=function(err) NA)
+  
+  return(list(thresyear=thresyear, thresconc = thresconc, ysmooth = ysmooth,
+              ysmooth.change = ysmooth.change,
+              y.change = y.change))
+}
+
+```
+
+
+
+### Use historical global tas compared with HadCRUT4.6 observations to weight the models.
+Projections are using SSP585 (for maximum signal). There are all sorts of issues ignored here (for example, putting the maesurements on a common grid), but that shouldn't matter for a simple demonstration of relative weighting.
+
+```{r}
+# data directories
+fn.ssp585 = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'ssp585_r1i1p1')
+fn.historical = dir('/data/users/hadaw/cmip6/areaavg/tas/', pattern = 'historical_r1i1p1')
+
+# model name lists
+mods.ssp585 = extractModelnames(fn.ssp585, startstring = 'tas_Amon_', stopstring = "_ssp585")
+mods.historical = extractModelnames(fn.historical, startstring = 'tas_Amon_',
+  stopstring = "_historical")
+
+# Find models common to historical and future projection
+common.mods = intersect(mods.ssp585, mods.historical)
+
+nmods = length(common.mods)
+
+fn.ssp585.kept = fn.ssp585[match(common.mods, mods.ssp585)]
+fn.historical.kept = fn.historical[ match(common.mods, mods.historical)]
+
+# useful
+# https://stackoverflow.com/questions/17215789/extract-a-substring-in-r-according-to-a-pattern
+# start with strsplit, pmatch, charmatch
+```
+
+### Load and process historical model data
+Uses a time series of the last 165 years of the historical runs.
+
+```{r fig.height = 8, fig.width = 8}
+
+# Historical years
+hyrs = 1850:2014
+nyr = length(hyrs)
+
+#variable matrix (turn this into a function?
+hmat = matrix(nrow = length(fn.historical.kept), ncol = nyr)
+
+for(i in 1:length(fn.historical.kept)){
+# Open and extract data from the netcdf file
+  fn = fn.historical.kept[i]
+  fnpath = paste0("/data/users/hadaw/cmip6/areaavg/tas/", fn)
+
+  nc = nc_open(fnpath)
+
+  v = ncvar_get(nc, 'tas')
+  nc_close(nc)
+  
+  vtail = tail(v, nyr)
+  hmat[i, ] = vtail
+}
+
+
+par(las = 1)
+matplot(hyrs, t(hmat), 
+        type = 'l', lty = 'solid', main = 'raw model tas', ylab = 'tas (K)')
+
+# Amomalize model runs to the mean of each run
+hmat.means = apply(hmat, 1, mean)
+
+# varmat.anom is the variable timeseries matrix anomaly
+hmat.anom = sweep(hmat, 1, STATS = hmat.means)
+```
+
+## Extract future projection data
+Start with a single realisation from each model (r1i1p1), to keep everything the same.  
+Hadley models use f2 - they don't have f1
+```{r fig.width = 7, fig.height = 7}
+
+fyrs = 2015:2099
+fnyr = length(fyrs)
+futuremat = matrix(nrow = length(fn.ssp585.kept), ncol = fnyr)
+
+for(i in 1:length(fn.ssp585.kept)){
+# Open and extract data from the netcdf file
+  fn = fn.ssp585.kept[i]
+  fnpath = paste0("/data/users/hadaw/cmip6/areaavg/tas/", fn)
+
+  nc = nc_open(fnpath)
+
+  v = ncvar_get(nc, 'tas')
+  #print(length(v))
+  nc_close(nc)
+  
+  vhead = head(v, fnyr)
+ 
+  futuremat[i, ] = vhead
+}
+
+
+# Amomalize to the mean
+# varmat.anom is the variable timeseries matrix anomaly
+futuremat.changemat = sweep(futuremat, 1, STATS = futuremat[,1])
+future.diff = futuremat.changemat [,ncol(futuremat.changemat )]
+
+```
+
+```{r, fig.width = 10, fig.height=10}
+
+full_trajectory <- cbind(hmat, futuremat)
+full_years <- c(hyrs,fyrs)
+
+matplot(full_years, t(full_trajectory), type = 'l', lty = 'solid')
+
+
+```
+
+## Anomalize to early years
+```{r}
+anom_years <- 1881:1900
+anom_index <- which(full_years%in%anom_years)
+historical_mean <- apply(full_trajectory[, anom_index], 1, FUN = mean)
+
+full_trajectory_anomaly = sweep(full_trajectory, 1, STATS = historical_mean)
+
+par(las = 1)
+matplot(full_years, t(full_trajectory_anomaly),
+        type = 'l', lty = 'solid', col = 'darkgrey',
+        bty = 'n',
+        main = 'tas anomaly',
+        ylab = 'Deg C')
+
+```
+
+```{r}
+# Looks like we can get the ssp concentration data from here
+# http://greenhousegases.science.unimelb.edu.au/#!/ghg?scenarioid=9&mode=downloads
+
+co2_hist <- read.csv('../data/conc/mole-fraction-of-carbon-dioxide-in-air_input4MIPs_GHGConcentrations_CMIP_UoM-CMIP-1-2-0_gr1-GMNHSH_0000-2014.csv')
+
+plot(co2_hist$year, co2_hist$data_mean_global, type = 'l')
+
+
+co2_ssp585 <- read.csv('../data/conc/mole-fraction-of-carbon-dioxide-in-air_input4MIPs_GHGConcentrations_ScenarioMIP_UoM-REMIND-MAGPIE-ssp585-1-2-1_gr1-GMNHSH_2015-2500.csv')
+
+plot(co2_ssp585$year, co2_ssp585$data_mean_global, type = 'l')
+
+
+```
+
+
+# sort the co2 data into the correct format.
+```{r}
+
+
+process_co2_data <- function(hist_co2, ssp_co2, years){
+
+  # could get rid of the row names here - they just count rows from 1
+  
+  co2_hist_ssp <- as.data.frame(rbind(cbind(hist_co2$year, hist_co2$data_mean_global),
+                         cbind(ssp_co2$year, ssp_co2$data_mean_global)))
+  
+  colnames(co2_hist_ssp) <- c('year','data_mean_global')
+  
+  out <- co2_hist_ssp[which(co2_hist_ssp$year%in%years), ]
+  out
+}
+
+  
+co2_ssp585_const <- process_co2_data(hist_co2 = co2_hist,
+                           ssp_co2 = co2_ssp585,
+                           years = full_years)
+```
+
+
+
+## Year of passing 1.5 and 2 degrees for SSP585 
+```{r}
+passyears_ssp585 <- as.data.frame(matrix(NA, nrow = length(common.mods), ncol = 5))
+colnames(passyears_ssp585) <- c('modname', "year_1.5","conc_1.5", "year_2", "conc_2")
+
+passyears_ssp585[,1] <- common.mods 
+
+for(i in 1:length(common.mods)){
+  
+  out1_5 <- findThresRolling(time = co2_ssp585_const$year, y = full_trajectory[i,],
+                         conc = co2_ssp585_const$data_mean_global, k = 20, thres = 1.5, bp = 1861:1880)
+  
+  passyears_ssp585[i, "year_1.5"] <- out1_5$thresyear
+  passyears_ssp585[i, "conc_1.5"] <- out1_5$thresconc
+  
+  
+  out2 <- findThresRolling(time = co2_ssp585_const$year, y = full_trajectory[i,],
+                         conc = co2_ssp585_const$data_mean_global, k = 20, thres = 2, bp = 1861:1880)
+  
+  passyears_ssp585[i,"year_2"] <- out2$thresyear
+  passyears_ssp585[i,"conc_2"] <- out2$thresconc
+}
+
+```
+
+```{r}
+par(las = 1)
+matplot(full_years, t(full_trajectory_anomaly),
+        type = 'l', lty = 'solid', col = 'darkgrey',
+        bty = 'n',
+        main = 'SSP585',
+        ylab = 'Deg C')
+
+points(passyears_ssp585[,'year_1.5'],rep(1.5, length(common.mods)), pch = 20, col = 'skyblue2')
+points(passyears_ssp585[,'year_2'],rep(2, length(common.mods)), pch = 20, col = 'tomato2')
+
+
+```
+
