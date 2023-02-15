@@ -448,10 +448,10 @@ generatePassyears <- function(mods, co2, tas, k = 20, bp = 1861:1880){
   
   stopifnot(length(mods)==nrow(tas))
   
-  passyears <- as.data.frame(matrix(NA, nrow = length(mods), ncol = 5))
+  passyears <- as.data.frame(matrix(NA, nrow = length(mods), ncol = 9))
   
-  colnames(passyears) <- c('modname', "year_1.5","conc_1.5", "year_2", "conc_2")
-  
+  colnames(passyears) <- c('modname', "year_1.5","conc_1.5", "year_2", "conc_2", "year_3", "conc_3", "year_4", "conc_4")
+
   passyears[,1] <- mods 
   
   for(i in 1:length(mods)){
@@ -467,12 +467,47 @@ generatePassyears <- function(mods, co2, tas, k = 20, bp = 1861:1880){
     
     passyears[i,"year_2"] <- out2$thresyear
     passyears[i,"conc_2"] <- out2$thresconc
+    
+     out3 <- findThresRolling(time = co2$year, y = tas[i,],
+                              conc = co2$data_mean_global, k = k, thres = 3, bp = bp)
+    
+     passyears[i,"year_3"] <- out3$thresyear
+     passyears[i,"conc_3"] <- out3$thresconc
+    
+     out4 <- findThresRolling(time = co2$year, y = tas[i,],
+                              conc = co2$data_mean_global, k = k, thres = 4, bp = bp)
+    
+     passyears[i,"year_4"] <- out4$thresyear
+     passyears[i,"conc_4"] <- out4$thresconc
+    
   }
   
   passyears
   
 }
 ```
+
+
+```{r}
+test <- findThresRolling(time = co2_ssp585_const$year, y = full_trajectory_tas_ssp119[1, ], conc = co2$data_mean_global,
+                         k = 20, thres = 3, bp = 1861:1880)
+
+
+plotRollingThresh <- function(fTRobj){
+  
+  
+  plot(fTRobj$ysmooth.change, type = 'l')
+  lines(fTRobj$y.change, type = 'l', col = 'grey')
+  
+  
+}
+
+
+plotRollingThresh(test)
+
+```
+
+
 
 ## Calculate the years the SSPs pass warming levels
 
@@ -511,12 +546,23 @@ for(i in 1:length(ssplist)){
         main = paste0('SSP',ssplist[i]),
         ylab = 'Deg C')
   
-  passyears = get(paste0('passyears_ssp',ssplist[i]))
+ passyears = get(paste0('passyears_ssp',ssplist[i]))
 
  points(passyears[,'year_1.5'],rep(1.5, length(get(paste0('models_tas_ssp', ssplist[i])))), pch = 20, col = 'skyblue2')
-  points(passyears[,'year_2'], rep(2, length(get(paste0('models_tas_ssp', ssplist[i])))), pch = 20, col = 'tomato2')
+ points(passyears[,'year_2'], rep(2, length(get(paste0('models_tas_ssp', ssplist[i])))), pch = 20, col = 'tomato2')
+ points(passyears[,'year_3'], rep(3, length(get(paste0('models_tas_ssp', ssplist[i])))), pch = 20, col = 'darkorchid')
+ points(passyears[,'year_4'], rep(4, length(get(paste0('models_tas_ssp', ssplist[i])))), pch = 20, col = 'darkturquoise')
   
 }
+
+
+
+```
+
+# Check it works with the smoothing
+```{r}
+
+
 
 
 
